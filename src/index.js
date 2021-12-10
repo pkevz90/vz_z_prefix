@@ -50,18 +50,7 @@ class Login extends React.Component {
   loginFuncton(action) {
     let username = action.target.previousSibling.previousSibling.value
     let password = action.target.previousSibling.value
-    fetch('/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-        // 'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: JSON.stringify({username, password}) // body data type must match "Content-Type" header
-    }).then(response => {
-      if (response.status === 200) {
-        this.props.auth(username)
-      }
-    })
+    this.props.auth(username, password)
   }
   render () {
     return (
@@ -115,7 +104,7 @@ class Header extends React.Component {
           <div className="brand-name">
             Tiger Blog
           </div>
-          {this.props.auth ? '' : <Login auth={this.props.setauth} click={this.props.click}/>}
+          {this.props.auth ? <div>Welcome {this.props.auth}!</div> : <Login auth={this.props.setauth} click={this.props.click}/>}
         </div>
       </>
     )
@@ -190,11 +179,23 @@ class App extends React.Component {
     this.flipCreateAccount = this.flipCreateAccount.bind(this)
     this.setAuthentication = this.setAuthentication.bind(this)
   }
-  setAuthentication(input) {
-    console.log(input);
-    this.setSate({
-      authenticated: input
+  async setAuthentication(username, password) {
+    console.log(this.setState);
+    let response = await fetch('/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: JSON.stringify({username, password}) // body data type must match "Content-Type" header
     })
+    if (response.status === 201) {
+      this.setState({authenticated: username})
+      response = await response.json()
+      window.localStorage.setItem('jwt', response)
+      console.log(this.state);
+    }
+    
   }
   setDisplayedBlog(blog) {
     this.setState({selectedBlog: blog})
