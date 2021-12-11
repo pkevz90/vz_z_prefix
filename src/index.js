@@ -4,7 +4,7 @@ import './index.css';
 let testBlogs = [
   {
     id: 1,
-    user: 1,
+    user: "Perry",
     subject: 'This is Blog #1',
     dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
     content: `
@@ -13,7 +13,7 @@ let testBlogs = [
   },
   {
     id: 2,
-    user: 3,
+    user: "Kylee",
     subject: 'This is Blog #2',
     dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
     content: `
@@ -22,7 +22,7 @@ let testBlogs = [
   },
   {
     id: 3,
-    user: 1,
+    user: "Perry",
     subject: 'This is Blog #3',
     dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
     content: `
@@ -31,7 +31,7 @@ let testBlogs = [
   },
   {
     id: 4,
-    user: 1,
+    user: "Kylee",
     subject: 'This is Blog #4',
     dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
     content: `
@@ -68,9 +68,6 @@ class Login extends React.Component {
 }
 
 class UserDisplay extends React.Component {
-  constructor(props) {
-    super(props)
-  }
   render() {
     return (
       <div>
@@ -93,7 +90,6 @@ class CreateUser extends React.Component {
     let password = button.previousSibling.previousSibling.value
     let password_check = button.previousSibling.value
     if (password !== password_check) return
-    console.log(username, password);
     let response = await fetch('/create', {
       method: 'POST',
       headers: {
@@ -152,16 +148,56 @@ class Header extends React.Component {
 }
 
 class BlogPost extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      edit: false
+    }
+    this.editContent = this.editContent.bind(this)
+  }
+  async editContent() {
+    let state = {...this.state}
+    if (state.edit) {
+      // Save Changes
+      let newBlog = {...this.props.blog}
+      // 
+      let response = await fetch('/post/' + this.props.blog.id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newBlog)
+      })
+    }
+    this.setState({
+      edit: !state.edit
+    })
+  }
+  async deleteContent() {
+    let response = await fetch('/post/' + this.props.blog.id, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
   render() {
+    let contentStyle = {
+      backgroundColor: '#CCC',
+      border: '1px solid black',
+      borderRadius: '10px'
+    }
+    contentStyle = this.state.edit ? contentStyle : {}
     return (
       <div className="blog-post">
         <div className="blog-title">{this.props.blog.subject}</div>
+        <div>Created By: {this.props.blog.user}</div>
         <div>{this.props.blog.dateCreated.toString().split('GMT')[0]}</div>
-        <div>{this.props.blog.content}</div>
+        <div style={contentStyle} contentEditable={this.state.edit}>{this.props.blog.content}</div>
         <div className="blog-post-buttons">
-            <button>Edit Post</button>
             <button onClick={() => this.props.click(undefined)}>Back to Posts</button>
-            <button>Delete Post</button>
+            {this.props.auth === this.props.blog.user ? <button onClick={this.editContent}>{this.state.edit ? 'Save Changes' : 'Edit Post'}</button> : ''}
+            {this.props.auth === this.props.blog.user ? <button>Delete Post</button> : ''}
         </div>
       </div>
     )
@@ -240,6 +276,7 @@ class App extends React.Component {
     this.checkAuthentication()
   }
   async checkAuthentication() {
+    if (this.state.authenticated) return
     let response = await fetch('/login/auth', {
       method: 'GET',
       headers: {
@@ -272,11 +309,12 @@ class App extends React.Component {
     this.setState({createUser: old})
   }
   render() {
+    console.log(this.state.authenticated);
     return (
       <div>
         <Header logout={this.logoutUser} setauth={this.setAuthentication} click={this.flipCreateAccount} auth={this.state.authenticated}/>
         {this.state.selectedBlog === undefined && this.state.authenticated && !this.state.createUser ? <BlogInput/> : ''}
-        {this.state.selectedBlog !== undefined && !this.state.createUser ? <BlogPost blog={this.state.testBlogs[this.state.selectedBlog]} click={this.setDisplayedBlog}/> : this.state.createUser ? '' : <BlogDisplay blogs={this.state.testBlogs} click={this.setDisplayedBlog}/>}
+        {this.state.selectedBlog !== undefined && !this.state.createUser ? <BlogPost auth={this.state.authenticated} blog={this.state.testBlogs[this.state.selectedBlog]} click={this.setDisplayedBlog}/> : this.state.createUser ? '' : <BlogDisplay blogs={this.state.testBlogs} click={this.setDisplayedBlog}/>}
         {this.state.createUser ? <CreateUser/> : ''}
       </div>
     )

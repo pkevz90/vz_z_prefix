@@ -4,7 +4,7 @@ const path = require('path');
 const app = express()
 const PORT = process.env.PORT || 3001
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
 
 let testBlogs = [
     {
@@ -50,22 +50,16 @@ let testBlogs = [
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
 
-const users = [
-    {
-        username: 'Perry',
-        password: 'password'
-    },
-    {
-        username: 'Kylee',
-        password: 'password'
-    },
-
-]
+const users = [{
+    username: 'Perry',
+    password: '$2b$12$0XA.ZjS43kYb0uA4Bqx2HeATa10XxOGLfYgw3RKiJhn3arnMUMgmq'
+}]
 
 app.post('/login', async (req,res) => {
     let user = users.find(user => user.username === req.body.username)
     if (user === undefined) return res.sendStatus(401)
-    if (user.password === req.body.password) {
+    let passComp = await bcrypt.compare(req.body.password, user.password)
+    if (passComp) {
         // Send JWT
         let authUser = {
             username: user.username
@@ -79,15 +73,45 @@ app.post('/login', async (req,res) => {
 })
 
 app.post('/create', async (req,res) => {
+    let hashedPassword = await bcrypt.hash(req.body.password, 12)
     users.push({
         username: req.body.username,
-        password: req.body.password
+        password: hashedPassword
     })
     res.sendStatus(201)
 })
 
+app.get('/posts', (req,res) => {
+    res.status(200).json({testBlogs}).send()
+})
+
+app.get('/posts/:user' ,(req,res) => {
+    let user = req.params.user
+    let outBlogs = testBlogs.filter(blog => blog.user === user)
+    res.status(200).json({outBlogs}).send()
+})
+// /
 app.get('/login/auth', checkJWT, (req,res) => {
+    if (users.find(user => user.username === req.user)) return res.sendStatus(418)
     res.status(201).json({username: req.user}).send()
+})
+
+app.put('/post/:id', checkJWT, (req,res) => {
+    if (req.user !== req.body.user) return res.sendStatus(403)
+    let id = req.params.id
+    let postIndex = findIndex(post => post.id === id)
+    if (postIndex === undefined) return res.sendStatus(404)
+    testBlogs[postIndex] = req.body
+    res.sendStatus(200)
+})
+
+app.delete('/post/:id', checkJWT, (req,res) => {
+    if (req.user !== req.body.user) return res.sendStatus(403)
+    let id = req.params.id
+    let postIndex = findIndex(post => post.id === id)
+    if (postIndex === undefined) return res.sendStatus(404)
+    testBlogs.splice(postIndex,1)
+    res.sendStatus(200)
 })
 
 // Middleware to check auth token
