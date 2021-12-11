@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-
 let testBlogs = [
   {
     id: 1,
@@ -68,7 +67,48 @@ class Login extends React.Component {
   }
 }
 
+class UserDisplay extends React.Component {
+  constructor(props) {
+    super(props)
+  }
+  render() {
+    return (
+      <div>
+        <div className="input-form">
+          <button>All Posts</button>
+          <button>Your Posts</button>
+          <div>Welcome {this.props.user}!</div>
+          <button onClick={this.props.logout}>Logout</button>
+        </div>
+
+      </div>
+    )
+  }
+}
+
 class CreateUser extends React.Component {
+  async createUser(button) {
+    button = button.target
+    let username = button.previousSibling.previousSibling.previousSibling.value
+    let password = button.previousSibling.previousSibling.value
+    let password_check = button.previousSibling.value
+    if (password !== password_check) return
+    console.log(username, password);
+    let response = await fetch('/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({username, password})
+    })
+    if (response.status === 201) {
+      console.log('success');
+    }
+    else {
+      console.log('failure');
+    }
+
+  }
   render() {
     let outerStyle = {
       display: 'flex',
@@ -89,7 +129,7 @@ class CreateUser extends React.Component {
           <input placeholder="username"/>
           <input placeholder="password" type="password"/>
           <input placeholder="confirm password" type="password"/>
-          <button>Create Account</button>
+          <button onClick={this.createUser}>Create Account</button>
         </div>
       </div>
     )
@@ -104,7 +144,7 @@ class Header extends React.Component {
           <div className="brand-name">
             Tiger Blog
           </div>
-          {this.props.auth ? <div>Welcome {this.props.auth}!</div> : <Login auth={this.props.setauth} click={this.props.click}/>}
+          {this.props.auth ? <UserDisplay logout={this.props.logout} user={this.props.auth}></UserDisplay> : <Login auth={this.props.setauth} click={this.props.click}/>}
         </div>
       </>
     )
@@ -178,16 +218,15 @@ class App extends React.Component {
     this.setDisplayedBlog = this.setDisplayedBlog.bind(this)
     this.flipCreateAccount = this.flipCreateAccount.bind(this)
     this.setAuthentication = this.setAuthentication.bind(this)
+    this.logoutUser = this.logoutUser.bind(this)
   }
   async setAuthentication(username, password) {
-    console.log(this.setState);
     let response = await fetch('/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-        // 'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({username, password}) // body data type must match "Content-Type" header
+      body: JSON.stringify({username, password})
     })
     if (response.status === 201) {
       this.setState({authenticated: username})
@@ -197,8 +236,35 @@ class App extends React.Component {
     }
     
   }
+  componentDidMount() {
+    this.checkAuthentication()
+  }
+  async checkAuthentication() {
+    let response = await fetch('/login/auth', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
+      }
+    })
+    let status = response.status
+    response = await response.json()
+    if (status === 201) {
+      this.setState({
+        authenticated: response.username
+      })
+    }
+    
+  }
   setDisplayedBlog(blog) {
     this.setState({selectedBlog: blog})
+  }
+  logoutUser() {
+    window.localStorage.removeItem('jwt')
+    this.setState({
+      authenticated: false,
+      selectedBlog: undefined
+    })
   }
   flipCreateAccount() {
     console.log(1);
@@ -208,7 +274,7 @@ class App extends React.Component {
   render() {
     return (
       <div>
-        <Header setauth={this.setAuthentication} click={this.flipCreateAccount} auth={this.state.authenticated}/>
+        <Header logout={this.logoutUser} setauth={this.setAuthentication} click={this.flipCreateAccount} auth={this.state.authenticated}/>
         {this.state.selectedBlog === undefined && this.state.authenticated && !this.state.createUser ? <BlogInput/> : ''}
         {this.state.selectedBlog !== undefined && !this.state.createUser ? <BlogPost blog={this.state.testBlogs[this.state.selectedBlog]} click={this.setDisplayedBlog}/> : this.state.createUser ? '' : <BlogDisplay blogs={this.state.testBlogs} click={this.setDisplayedBlog}/>}
         {this.state.createUser ? <CreateUser/> : ''}
