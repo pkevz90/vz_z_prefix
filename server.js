@@ -6,6 +6,25 @@ const PORT = process.env.PORT || 3001
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
 const { Sequelize, Model, DataTypes } = require('sequelize')
+const {Client} = require('pg');
+const { printCommonLine } = require('jest-diff/build/printDiffs');
+
+const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+})
+
+client.connect()
+let query = `CREATE TABLE IF NOT EXISTS blog_users(id SERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL);`
+// query = `DROP TABLE users;`
+client.query(query, (err, res) => {
+    client.query(`SELECT * FROM blog_users`, (err, res) => {
+        console.log(res.rows);
+        // client.query("INSERT INTO blog_users(username, password) VALUES ('Test','USER')")
+    })
+})
 
 // console.log(process.env.DATABASE_URL);
 let sequelize = new Sequelize({
@@ -13,6 +32,12 @@ let sequelize = new Sequelize({
     storage: './blog.db'
 })
 
+// let sequelize2 = new Sequelize(process.env.DATABASE_URL, {
+//     dialect: 'postgres',
+//     ssl: {
+//         rejectUnauthorized: false
+//     }
+// })
 
 const User = sequelize.define('user', {
     username: {
