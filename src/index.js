@@ -252,7 +252,7 @@ class App extends React.Component {
     response = await response.json()
     if (status === 201) {
       this.setState({
-        authenticated: response.username
+        authenticated: response.user
       })
     }
     

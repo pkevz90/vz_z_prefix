@@ -5,8 +5,6 @@ const app = express()
 const PORT = process.env.PORT || 3001
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
-const sqlite3 = require('sqlite3').verbose()
-const fs = require('fs');
 const { Sequelize, Model, DataTypes } = require('sequelize')
 
 const sequelize = new Sequelize({
