@@ -1,4 +1,4 @@
-// require('dotenv').config()
+require('dotenv').config()
 const express = require('express')
 const path = require('path');
 const app = express()
@@ -9,7 +9,7 @@ const { Sequelize, Model, DataTypes } = require('sequelize')
 
 console.log(process.env.DATABASE_URL);
 let sequelize
-if (process.env.DATABASE_URL) {
+if (false) {
     sequelize = new Sequelize(process.env.DATABASE_URL)
 }
 else {
