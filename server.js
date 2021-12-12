@@ -9,34 +9,42 @@ const { Sequelize, Model, DataTypes } = require('sequelize')
 const {Client} = require('pg');
 const { printCommonLine } = require('jest-diff/build/printDiffs');
 
-const client = new Client({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
-})
-
-client.connect()
-let query = `CREATE TABLE IF NOT EXISTS blog_users(id SERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL);`
-// query = `DROP TABLE users;`
-client.query(query, (err, res) => {
-    client.query(`SELECT * FROM blog_users`, (err, res) => {
-        console.log(res.rows);
-        // client.query("INSERT INTO blog_users(username, password) VALUES ('Test','USER')")
-    })
-})
-
-// console.log(process.env.DATABASE_URL);
-let sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: './blog.db'
-})
-
-// let sequelize2 = new Sequelize(process.env.DATABASE_URL, {
-//     dialect: 'postgres',
+// const client = new Client({
+//     connectionString: process.env.DATABASE_URL,
 //     ssl: {
 //         rejectUnauthorized: false
 //     }
+// })
+
+// client.connect()
+// let query = `CREATE TABLE IF NOT EXISTS blog_users(id SERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL);`
+// // query = `DROP TABLE users;`
+// client.query(query, (err, res) => {
+//     client.query(`SELECT * FROM blog_users`, (err, res) => {
+//         console.log(res.rows);
+//         // client.query("INSERT INTO blog_users(username, password) VALUES ('Test','USER')")
+//     })
+// })
+
+// console.log(process.env.DATABASE_URL);
+// let sequelize = new Sequelize({
+//     dialect: 'sqlite',
+//     storage: './blog.db'
+// })
+
+let sequelize = new Sequelize(process.env.DATABASE_URL, {
+    dialectOptions: {
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
+})
+
+// sequelize2.authenticate().then(() => {
+//     console.log('successful');
+// }).catch(err => {
+//     console.error(err)
 // })
 
 const User = sequelize.define('user', {
