@@ -10,7 +10,7 @@ const { Sequelize, Model, DataTypes } = require('sequelize')
 console.log(process.env.DATABASE_URL);
 let sequelize
 if (process.env.DATABASE_URL) {
-    sequelize = new Sequelize(process.env.DATABASE_URL, {
+    sequelize = new Sequelize('postgres://xyquxytqbvnlyq:4f0bd1d50646ca776e4f010be81ab793c54ef67bab06acbe33448c94d387b754@ec2-34-193-235-32.compute-1.amazonaws.com:5432/dfm4ro5t485no5', {
         dialect: 'postgres',
         protocol: 'postgres',
         dialectOptions: {
