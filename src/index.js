@@ -1,48 +1,7 @@
-import { LOGICAL_OPERATORS } from '@babel/types';
-import { json } from 'body-parser';
-import { bold } from 'cli-boxes';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-let testBlogs = [
-  {
-    id: 1,
-    user: "Perry",
-    subject: 'This is Blog #1',
-    dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
-    content: `
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sed ante eget massa aliquam semper maximus vel sem. Nulla et ante bibendum, tincidunt metus vitae, bibendum ligula. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Sed placerat, quam ut accumsan euismod, lacus enim cursus diam, sed ornare justo justo non nisl. Sed hendrerit neque ut tellus hendrerit, in venenatis turpis fringilla. Praesent ultricies magna efficitur est vestibulum euismod. Suspendisse potenti. Aenean vel neque enim. Morbi accumsan a turpis egestas maximus. Fusce mattis et augue pharetra vulputate.
-    `
-  },
-  {
-    id: 2,
-    user: "Kylee",
-    subject: 'This is Blog #2',
-    dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
-    content: `
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer sed ante eget massa aliquam semper maximus vel sem. Nulla et ante bibendum, tincidunt metus vitae, bibendum ligula. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Sed placerat, quam ut accumsan euismod, lacus enim cursus diam, sed ornare justo justo non nisl. Sed hendrerit neque ut tellus hendrerit, in venenatis turpis fringilla. Praesent ultricies magna efficitur est vestibulum euismod. Suspendisse potenti. Aenean vel neque enim. Morbi accumsan a turpis egestas maximus. Fusce mattis et augue pharetra vulputate.
-    `
-  },
-  {
-    id: 3,
-    user: "Perry",
-    subject: 'This is Blog #3',
-    dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
-    content: `
-    Maecenas malesuada pulvinar nisi, sed facilisis justo. Proin laoreet felis sed justo volutpat, eu vulputate lorem iaculis. Aenean ac pretium est. Etiam sit amet accumsan lacus. Quisque justo felis, vulputate vitae pellentesque eu, rhoncus vitae leo. Nam lobortis nunc velit, et convallis sapien euismod eget. Nam nec tortor et risus blandit finibus in eget ex. Aenean ullamcorper placerat ipsum vitae scelerisque. Vestibulum id fringilla eros. Vivamus vestibulum nisi cursus rhoncus finibus. Nulla ut egestas sem.
-    `
-  },
-  {
-    id: 4,
-    user: "Kylee",
-    subject: 'This is Blog #4',
-    dateCreated: new Date(Date.now() + 2*86400000 - 4 * Math.random() * 86400000),
-    content: `
-    Morbi volutpat ante sed magna pretium molestie. Nunc vulputate placerat leo in accumsan. Donec ultricies consequat mollis. Curabitur sodales leo sed justo blandit posuere. Donec ullamcorper est non nunc hendrerit, ut rutrum dolor facilisis. Pellentesque eget tempor nibh, et dictum risus. Praesent interdum metus a pretium interdum. Aliquam ac malesuada magna, ut tempor quam. Donec imperdiet porttitor felis tempus fermentum. Sed ac nulla massa. Curabitur vehicula pellentesque sapien, et viverra eros elementum vitae. Vivamus at urna id massa tincidunt varius. Suspendisse potenti. Donec placerat tellus imperdiet, commodo odio id, lacinia eros. Aliquam non augue at risus viverra eleifend.Maecenas malesuada pulvinar nisi, sed facilisis justo. Proin laoreet felis sed justo volutpat, eu vulputate lorem iaculis. Aenean ac pretium est. Etiam sit amet accumsan lacus. Quisque justo felis, vulputate vitae pellentesque eu, rhoncus vitae leo. Nam lobortis nunc velit, et convallis sapien euismod eget. Nam nec tortor et risus blandit finibus in eget ex. Aenean ullamcorper placerat ipsum vitae scelerisque. Vestibulum id fringilla eros. Vivamus vestibulum nisi cursus rhoncus finibus. Nulla ut egestas sem.
-    `
-  }
-  
-]
 
 class Login extends React.Component {
   constructor(props) {
@@ -196,7 +155,7 @@ class BlogPost extends React.Component {
       <div className="blog-post">
         <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit} className="blog-title">{this.props.blog === undefined ? '' :  this.props.blog.subject}</div>
         <div>Created By: {this.props.blog === undefined ? '' : this.props.blog.user}</div>
-        <div>{this.props.blog === undefined ? '' : this.props.blog.dateCreated.toString().split('GMT')[0]}</div>
+        <div>{this.props.blog === undefined ? '' : this.props.blog.createdAt}</div>
         <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit}>{this.props.blog === undefined ? '' : this.props.blog.content}</div>
         <div className="blog-post-buttons">
             <button onClick={() => this.props.click(undefined)}>Back to Posts</button>
@@ -219,7 +178,7 @@ class BlogDisplay extends React.Component {
           return (
             <div className="blog-item noselect" key={blog.id} onClick={() => this.selectBlog(blog.id)}>
               <div className="blog-title">{blog.subject}</div>
-              <div>{blog.dateCreated.toString().split('GMT')[0]}</div>
+              <div>{blog.createdAt}</div>
               <div>{blog.user}</div>
               <div>{blog.content.substring(0,101)}...</div>
             </div>
@@ -234,7 +193,7 @@ class App extends React.Component {
   constructor(props) {
     super(props)
     this.state = {
-      testBlogs,
+      testBlogs: [],
       selectedBlog: undefined,
       authenticated: false,
       createUser: false
