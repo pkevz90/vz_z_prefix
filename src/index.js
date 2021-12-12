@@ -283,7 +283,7 @@ class App extends React.Component {
     })
   }
   async checkAuthentication() {
-    if (this.state.authenticated) return
+    if (!window.localStorage.getItem('jwt')) return
     let response = await fetch('/login/auth', {
       headers: {
         'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
