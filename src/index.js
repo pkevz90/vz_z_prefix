@@ -219,7 +219,7 @@ class App extends React.Component {
       body: JSON.stringify({username, password})
     })
     if (response.status === 201) {
-      this.setState({authenticated: username})
+      this.setState({authenticated: username.toLowerCase()})
       response = await response.json()
       window.localStorage.setItem('jwt', response)
       this.getPosts(username)
@@ -248,7 +248,7 @@ class App extends React.Component {
     response = await response.json()
     if (status === 201) {
       this.setState({
-        authenticated: response.user
+        authenticated: response.user.toLowerCase()
       })
     }
     

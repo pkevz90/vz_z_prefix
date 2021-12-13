@@ -59,7 +59,7 @@ app.use(cookieSession({
 app.post('/login', async (req,res) => {
     let user = await User.findAll({
         where: {
-            username: req.body.username
+            username: req.body.username.toLowerCase()
         }
     })
     if (user.length === 0) return res.sendStatus(401)
@@ -72,7 +72,7 @@ app.post('/login', async (req,res) => {
         }
         const accessToken = jwt.sign(authUser, process.env.ACCESS_SECRET, {expiresIn: 1800})
         req.session.jwt = accessToken
-        return res.status(201).json({user: req.user})
+        return res.status(201).json({user: req.body.username.toLowerCase()})
     }
     else {
         return res.sendStatus(401)
@@ -85,7 +85,7 @@ app.post('/blog', checkJWT, async (req,res) => {
     let blog = await Blog.create({
         subject,
         content,
-        user
+        user: user.toLowerCase()
     })
     let blogs = await Blog.findAll({
         where: {
@@ -99,12 +99,12 @@ app.post('/create', async (req,res) => {
     let hashedPassword = await bcrypt.hash(req.body.password, 12)
     const oldUser = await User.findAll({
         where: {
-            username: req.body.username
+            username: req.body.username.toLowerCase()
         }
     })
     if (oldUser.length !== 0) return res.sendStatus(409)
     const user = await User.create({
-        username: req.body.username,
+        username: req.body.username.toLowerCase(),
         password: hashedPassword
     })
     res.sendStatus(201)
@@ -123,7 +123,7 @@ app.get('/logout', (req,res) => {
 app.get('/posts/:user' ,async (req,res) => {
     let blogs = await Blog.findAll({
         where: {
-            user: req.params.user
+            user: req.params.user.toLowerCase()
         }
     })
     res.status(200).json({outBlogs: blogs})
@@ -132,14 +132,15 @@ app.get('/posts/:user' ,async (req,res) => {
 app.get('/login/auth', checkJWT, async (req,res) => {
     let user = await User.findAll({
         where: {
-            username: req.user
+            username: req.user.toLowerCase()
         }
     })
     if (user.length === 0) return res.sendStatus(403)
-    res.status(201).json({user: req.user})
+    res.status(201).json({user: req.user.toLowerCase()})
 })
 
 app.put('/post/:id', checkJWT, async (req,res) => {
+    console.log(req.user, req.body.user);
     if (req.user !== req.body.user) return res.sendStatus(403)
     await Blog.update({
         content: req.body.content,
@@ -180,7 +181,7 @@ function checkJWT(req, res, next) {
             return res.sendStatus(403)
         }
         // JWT valid, add validated user to request
-        req.user = user.username
+        req.user = user.username.toLowerCase()
         next()
     })
 }
