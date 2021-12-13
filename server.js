@@ -9,29 +9,6 @@ const { Sequelize, Model, DataTypes } = require('sequelize')
 const {Client} = require('pg');
 const { printCommonLine } = require('jest-diff/build/printDiffs');
 
-// const client = new Client({
-//     connectionString: process.env.DATABASE_URL,
-//     ssl: {
-//         rejectUnauthorized: false
-//     }
-// })
-
-// client.connect()
-// let query = `CREATE TABLE IF NOT EXISTS blog_users(id SERIAL PRIMARY KEY, username TEXT NOT NULL, password TEXT NOT NULL);`
-// // query = `DROP TABLE users;`
-// client.query(query, (err, res) => {
-//     client.query(`SELECT * FROM blog_users`, (err, res) => {
-//         console.log(res.rows);
-//         // client.query("INSERT INTO blog_users(username, password) VALUES ('Test','USER')")
-//     })
-// })
-
-// console.log(process.env.DATABASE_URL);
-// let sequelize = new Sequelize({
-//     dialect: 'sqlite',
-//     storage: './blog.db'
-// })
-
 let sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
         ssl: {
@@ -40,12 +17,6 @@ let sequelize = new Sequelize(process.env.DATABASE_URL, {
         }
     }
 })
-
-// sequelize2.authenticate().then(() => {
-//     console.log('successful');
-// }).catch(err => {
-//     console.error(err)
-// })
 
 const User = sequelize.define('user', {
     username: {
@@ -58,13 +29,13 @@ const User = sequelize.define('user', {
     }
 })
 User.sync()
-const Blog = sequelize.define('blogs', {
+const Blog = sequelize.define('user_blogs', {
     subject: {
         type: DataTypes.STRING,
         allowNull: false
     },
     content: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(5000),
         allowNull: false
     },
     user: {
@@ -94,7 +65,7 @@ app.post('/login', async (req,res) => {
         let authUser = {
             username: req.body.username
         }
-        const accessToken = jwt.sign(authUser, process.env.ACCESS_SECRET)
+        const accessToken = jwt.sign(authUser, process.env.ACCESS_SECRET, {expiresIn: 1800})
         return res.status(201).json(accessToken).send()
     }
     else {
@@ -187,12 +158,11 @@ function checkJWT(req, res, next) {
     const token = authHeader && authHeader.split(' ')[1]
     // console.log(token);
     if (token == null) return res.sendStatus(401)
-    jwt.verify(token, process.env.ACCESS_SECRET, (err, user) => {
+    jwt.verify(token,process.env.ACCESS_SECRET, {algorithms: ['HS256']}, (err, user) => {
         if (err) {
             console.log(err);
             return res.sendStatus(403)
         }
-        console.log(user.username);
         req.user = user.username
         next()
     })

@@ -180,7 +180,7 @@ class BlogDisplay extends React.Component {
               <div className="blog-title">{blog.subject}</div>
               <div>{blog.createdAt}</div>
               <div>{blog.user}</div>
-              <div>{blog.content.substring(0,101)}...</div>
+              <div>{blog.content.length > 100 ? blog.content.substring(0,101) + '...' : blog.content}</div>
             </div>
           )
         })}
@@ -254,6 +254,9 @@ class App extends React.Component {
       this.setState({
         authenticated: response.user
       })
+    }
+    else {
+      window.localStorage.removeItem('jwt')
     }
     
   }
