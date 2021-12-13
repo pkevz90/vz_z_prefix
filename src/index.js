@@ -227,6 +227,7 @@ class App extends React.Component {
     
   }
   componentDidMount() {
+    document.title = 'VZ Blog'
     this.checkAuthentication()
     this.getPosts()
   }

@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3001
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
 const { Sequelize, Model, DataTypes } = require('sequelize')
+const cookieSession = require('cookie-session')
 const {Client} = require('pg');
 const { printCommonLine } = require('jest-diff/build/printDiffs');
 
