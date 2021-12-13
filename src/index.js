@@ -243,12 +243,7 @@ class App extends React.Component {
     })
   }
   async checkAuthentication() {
-    if (!window.localStorage.getItem('jwt')) return
-    let response = await fetch('/login/auth', {
-      headers: {
-        'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
-      }
-    })
+    let response = await fetch('/login/auth')
     let status = response.status
     response = await response.json()
     if (status === 201) {
@@ -256,21 +251,20 @@ class App extends React.Component {
         authenticated: response.user
       })
     }
-    else {
-      window.localStorage.removeItem('jwt')
-    }
     
   }
   setDisplayedBlog(blog) {
     this.setState({selectedBlog: blog})
   }
-  logoutUser() {
-    window.localStorage.removeItem('jwt')
-    this.setState({
-      authenticated: false,
-      selectedBlog: undefined
-    })
-    this.getPosts()
+  async logoutUser() {
+    let response = await fetch('/logout')
+    if (response.status === 200) {
+      this.setState({
+        authenticated: false,
+        selectedBlog: undefined
+      })
+      this.getPosts()
+    }
   }
   flipCreateAccount() {
     console.log(1);
@@ -315,8 +309,7 @@ class App extends React.Component {
     let response = await fetch('/post/' + newBlog.id, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json',
-        'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(newBlog)
     })
@@ -327,13 +320,9 @@ class App extends React.Component {
   }
   async deleteBlog(id) {
     let response = await fetch('/post/' + id, {
-      method: 'DELETE',
-      headers: {
-        'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
-      },
+      method: 'DELETE'
     })
     response = await response.json()
-    console.log(response);
     this.setState({
       testBlogs: response,
       selectedBlog: undefined

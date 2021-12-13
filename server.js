@@ -49,7 +49,11 @@ Blog.sync()
 
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
-
+app.use(cookieSession({
+    name: 'session',
+    keys: [process.env.COOKIE_KEY],
+    httpOnly: true
+}))
 
 
 app.post('/login', async (req,res) => {
@@ -67,7 +71,8 @@ app.post('/login', async (req,res) => {
             username: req.body.username
         }
         const accessToken = jwt.sign(authUser, process.env.ACCESS_SECRET, {expiresIn: 1800})
-        return res.status(201).json(accessToken).send()
+        req.session.jwt = accessToken
+        return res.status(201).json({user: req.user})
     }
     else {
         return res.sendStatus(401)
@@ -108,6 +113,11 @@ app.post('/create', async (req,res) => {
 app.get('/posts', async (req,res) => {
     let blogs = await Blog.findAll()
     res.status(200).json({outBlogs: blogs})
+})
+
+app.get('/logout', (req,res) => {
+    req.session = null
+    res.sendStatus(200)
 })
 
 app.get('/posts/:user' ,async (req,res) => {
@@ -159,15 +169,17 @@ app.delete('/post/:id', checkJWT, async (req,res) => {
 
 // Middleware to check auth token
 function checkJWT(req, res, next) {
-    const authHeader = req.headers['authorization']
-    const token = authHeader && authHeader.split(' ')[1]
-    // console.log(token);
+    const token = req.session.jwt
+    // If no JWT present, return forbidden
     if (token == null) return res.sendStatus(401)
+    // limit algorithm to HS256 to prevent tampering and sending JWT with 'none' setting as algorithm
     jwt.verify(token,process.env.ACCESS_SECRET, {algorithms: ['HS256']}, (err, user) => {
         if (err) {
-            console.log(err);
+            // Destroy cookie if JWT is not valid
+            req.session = null
             return res.sendStatus(403)
         }
+        // JWT valid, add validated user to request
         req.user = user.username
         next()
     })
