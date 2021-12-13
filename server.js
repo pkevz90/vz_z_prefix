@@ -148,7 +148,11 @@ app.delete('/post/:id', checkJWT, async (req,res) => {
             id: Number(req.params.id)
         }
     })
-    let blogs = await Blog.findAll()
+    let blogs = await Blog.findAll({
+        where: {
+            user: req.user
+        }
+    })
     res.status(200).json(blogs)
 })
 
