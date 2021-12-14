@@ -35,9 +35,9 @@ class UserDisplay extends React.Component {
       <div>
         <div className="input-form">
           <button onClick={() => this.props.getPosts()}>All Posts</button>
-          <button onClick={() => this.props.getPosts(this.props.user)}>Your Posts</button>
+          <button onClick={() => this.props.getPosts(this.props.user.id)}>Your Posts</button>
           <button onClick={() => this.props.create()}>Create Post</button>
-          <div>Welcome {this.props.user}!</div>
+          <div>Welcome {this.props.user.username}!</div>
           <button onClick={this.props.logout}>Logout</button>
         </div>
 
@@ -53,11 +53,13 @@ class CreateUser extends React.Component {
   }
   async createUser(button) {
     button = button.target
+    let firstName = button.previousSibling.previousSibling.previousSibling.previousSibling.previousSibling.value
+    let lastName = button.previousSibling.previousSibling.previousSibling.previousSibling.value
     let username = button.previousSibling.previousSibling.previousSibling.value
     let password = button.previousSibling.previousSibling.value
     let password_check = button.previousSibling.value
     if (password !== password_check) return
-    this.props.create(username, password)
+    this.props.create(firstName, lastName, username, password)
 
   }
   render() {
@@ -77,6 +79,8 @@ class CreateUser extends React.Component {
     return (
       <div style={outerStyle}>
         <div style={innerStyle}>
+          <input placeholder="first name"/>
+          <input placeholder="last name"/>
           <input placeholder="username"/>
           <input placeholder="password" type="password"/>
           <input placeholder="confirm password" type="password"/>
@@ -115,7 +119,7 @@ class BlogPost extends React.Component {
   createContent(button) {
     let newBlog = {
       content: button.target.parentNode.previousSibling.innerText,
-      subject: button.target.parentNode.previousSibling.previousSibling.previousSibling.previousSibling.innerText
+      title: button.target.parentNode.previousSibling.previousSibling.previousSibling.previousSibling.innerText
     }
     this.props.blogFunction.create(newBlog)
   }
@@ -135,9 +139,7 @@ class BlogPost extends React.Component {
     let newBlog = {
       id: this.props.blog.id,
       content: button.target.parentNode.previousSibling.innerText,
-      dateCreated: this.props.blog.dateCreated,
-      user: this.props.blog.user,
-      subject: button.target.parentNode.previousSibling.previousSibling.previousSibling.previousSibling.innerText
+      title: button.target.parentNode.previousSibling.previousSibling.previousSibling.previousSibling.innerText
     }
     this.props.blogFunction.edit(newBlog)
   }
@@ -153,14 +155,14 @@ class BlogPost extends React.Component {
     contentStyle = this.props.blog === undefined  || this.state.edit ? contentStyle : {}
     return (
       <div className="blog-post">
-        <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit} className="blog-title">{this.props.blog === undefined ? '' :  this.props.blog.subject}</div>
-        <div>Created By: {this.props.blog === undefined ? '' : this.props.blog.user}</div>
+        <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit} className="blog-title">{this.props.blog === undefined ? '' :  this.props.blog.title}</div>
+        <div>Created By: {this.props.blog === undefined ? '' : this.props.blog.bloguser.username}</div>
         <div>{this.props.blog === undefined ? '' : this.props.blog.createdAt}</div>
         <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit}>{this.props.blog === undefined ? '' : this.props.blog.content}</div>
         <div className="blog-post-buttons">
             <button onClick={() => this.props.click(undefined)}>Back to Posts</button>
-            {this.props.blog === undefined ? <button onClick={this.createContent}>Create</button> : this.props.auth === this.props.blog.user ? <button onClick={this.editContent}>{this.state.edit ? 'Save Changes' : 'Edit Post'}</button> : ''}
-            {this.props.blog === undefined ? '' : this.props.auth === this.props.blog.user ? <button onClick={this.deleteContent}>Delete Post</button> : ''}
+            {this.props.blog === undefined ? <button onClick={this.createContent}>Create</button> : this.props.auth.id === this.props.blog.bloguserId ? <button onClick={this.editContent}>{this.state.edit ? 'Save Changes' : 'Edit Post'}</button> : ''}
+            {this.props.blog === undefined ? '' : this.props.auth.id === this.props.blog.bloguserId ? <button onClick={this.deleteContent}>Delete Post</button> : ''}
         </div>
       </div>
     )
@@ -177,9 +179,9 @@ class BlogDisplay extends React.Component {
         {this.props.blogs.map((blog) => {
           return (
             <div className="blog-item noselect" key={blog.id} onClick={() => this.selectBlog(blog.id)}>
-              <div className="blog-title">{blog.subject}</div>
+              <div className="blog-title">{blog.title}</div>
               <div>{blog.createdAt}</div>
-              <div>{blog.user}</div>
+              <div>{blog.bloguser.username}</div>
               <div>{blog.content.length > 100 ? blog.content.substring(0,101) + '...' : blog.content}</div>
             </div>
           )
@@ -218,26 +220,26 @@ class App extends React.Component {
       },
       body: JSON.stringify({username, password})
     })
-    if (response.status === 201) {
-      this.setState({authenticated: username.toLowerCase()})
+    if (response.status === 200) {
       response = await response.json()
-      window.localStorage.setItem('jwt', response)
-      this.getPosts(username)
+      this.setState({authenticated: {
+        username: response.user,
+        id: response.id
+      }})
+      this.getPosts(response.id)
     }
     
   }
   componentDidMount() {
     document.title = 'VZ Blog'
     this.checkAuthentication()
-    this.getPosts()
+    this.getPosts(this.state.authenticated.id)
   }
-  async getPosts(user) {
+  async getPosts(userid) {
     let link = '/posts'
-    if (user !== undefined) link += '/' + user
-    // console.log(link);
+    if (userid !== undefined) link += '/' + userid
     let response = await fetch(link)
     response = await response.json()
-    // console.log(response);
     this.setState({
       testBlogs: response.outBlogs
     })
@@ -246,9 +248,12 @@ class App extends React.Component {
     let response = await fetch('/login/auth')
     let status = response.status
     response = await response.json()
-    if (status === 201) {
+    if (status === 200) {
       this.setState({
-        authenticated: response.user.toLowerCase()
+        authenticated: {
+          username: response.user,
+          id: response.id
+        }
       })
     }
     
@@ -267,17 +272,16 @@ class App extends React.Component {
     }
   }
   flipCreateAccount() {
-    console.log(1);
     let old = !this.state.createUser;
     this.setState({createUser: old})
   }
-  async createAccount(username, password) {
+  async createAccount(firstName, lastName, username, password) {
     let response = await fetch('/create', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({username, password})
+      body: JSON.stringify({firstName, lastName, username, password})
     })
     if (response.status === 201) {
       console.log('success');
@@ -295,8 +299,7 @@ class App extends React.Component {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'authorization': 'Bearer ' + window.localStorage.getItem('jwt')
-      },
+       },
       body: JSON.stringify(newBlog)
     })
     response = await response.json()

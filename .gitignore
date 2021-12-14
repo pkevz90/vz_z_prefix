@@ -7,7 +7,7 @@
 ./blog.db
 # testing
 /coverage
-
+/build
 # production
 .env
 # misc
