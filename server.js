@@ -16,6 +16,7 @@ let sequelize = new Sequelize(process.env.DATABASE_URL, {
         }
     }
 })
+sequelize.drop();
 // bloguser
 // blogposts
 const User = sequelize.define('bloguser', {
@@ -124,7 +125,8 @@ app.get('/posts', async (req,res) => {
         include: [
             {
                 model: User,
-                required: true
+                required: true,
+                attributes: ['username']
             }
         ]
     })
@@ -141,10 +143,12 @@ app.get('/posts/:userid' ,async (req,res) => {
         where: {
             bloguserId: req.params.userid
         },
+        attributes: ['id', 'createdAt', 'title', 'content'],
         include: [
             {
                 model: User,
-                required: true
+                required: true,
+                attributes: ['username']
             }
         ]
     })
