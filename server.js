@@ -56,7 +56,7 @@ app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(cookieSession({
     name: 'session',
-    keys: [process.env.COOKIE_KEY],
+    keys: [process.env.COOKIE_SECRET],
     httpOnly: true
 }))
 
