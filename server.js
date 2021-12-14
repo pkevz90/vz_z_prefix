@@ -91,10 +91,12 @@ app.post('/blog', authenticate, async (req,res) => {
         where: {
             bloguserId: req.id
         },
+        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
         include: [
             {
                 model: User,
-                required: true
+                required: true,
+                attributes: ['username']
             }
         ]
     })
@@ -122,6 +124,7 @@ app.post('/create', async (req,res) => {
 
 app.get('/posts', async (req,res) => {
     let blogs = await Blog.findAll({
+        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
         include: [
             {
                 model: User,
@@ -143,7 +146,7 @@ app.get('/posts/:userid' ,async (req,res) => {
         where: {
             bloguserId: req.params.userid
         },
-        attributes: ['id', 'createdAt', 'title', 'content'],
+        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
         include: [
             {
                 model: User,
@@ -183,10 +186,12 @@ app.put('/post/:postid', authenticate, async (req,res) => {
         }
     })
     let blogs = await Blog.findAll({
+        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
         include: [
             {
                 model: User,
-                required: true
+                required: true,
+                attributes: ['username']
             }
         ]
     })
@@ -203,10 +208,12 @@ app.delete('/post/:id', authenticate, async (req,res) => {
         where: {
             bloguserId: req.id
         },
+        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
         include: [
             {
                 model: User,
-                required: true
+                required: true,
+                attributes: ['username']
             }
         ]
     })
