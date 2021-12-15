@@ -17,7 +17,7 @@ class Login extends React.Component {
     return (
       <>
         <div>
-          <div className="input-form">
+          <div className={`input-form ${this.props.bad ? 'warning-login' : ''}`}>
             <input placeholder="Username"/>
             <input placeholder="Password" type="password"/>
             <button onClick={this.loginFuncton}>Login</button>
@@ -50,6 +50,9 @@ class CreateUser extends React.Component {
   constructor(props) {
     super(props)
     this.createUser = this.createUser.bind(this)
+    this.state = {
+      badPassword: false
+    }
   }
   async createUser(button) {
     button = button.target
@@ -58,7 +61,17 @@ class CreateUser extends React.Component {
     let username = button.previousSibling.previousSibling.previousSibling.value
     let password = button.previousSibling.previousSibling.value
     let password_check = button.previousSibling.value
-    if (password !== password_check) return
+    if (password !== password_check) {
+      this.setState({
+        badPassword: true
+      })
+      return
+    }
+    else {
+      this.setState({
+        badPassword: false
+      })
+    }
     this.props.create(firstName, lastName, username, password)
 
   }
@@ -78,7 +91,7 @@ class CreateUser extends React.Component {
     }
     return (
       <div style={outerStyle}>
-        <div style={innerStyle}>
+        <div className={(this.state.badPassword ? 'warning-password' :'')+ ' ' + (this.props.bad ? 'warning-create' :'')} style={innerStyle}>
           <input placeholder="first name"/>
           <input placeholder="last name"/>
           <input placeholder="username"/>
@@ -99,7 +112,7 @@ class Header extends React.Component {
           <div className="brand-name">
             Tiger Blog
           </div>
-          {this.props.auth ? <UserDisplay create={this.props.create} getPosts={this.props.getPosts} logout={this.props.logout} user={this.props.auth}></UserDisplay> : <Login auth={this.props.setauth} click={this.props.click}/>}
+          {this.props.auth ? <UserDisplay create={this.props.create} getPosts={this.props.getPosts} logout={this.props.logout} user={this.props.auth}></UserDisplay> : <Login bad={this.props.bad} auth={this.props.setauth} click={this.props.click}/>}
         </div>
       </>
     )
@@ -198,7 +211,9 @@ class App extends React.Component {
       testBlogs: [],
       selectedBlog: undefined,
       authenticated: false,
-      createUser: false
+      createUser: false,
+      badLogin: false,
+      badCreate: false
     }
     
     this.setDisplayedBlog = this.setDisplayedBlog.bind(this)
@@ -221,12 +236,20 @@ class App extends React.Component {
       body: JSON.stringify({username, password})
     })
     if (response.status === 200) {
+      this.setState({
+        badLogin: false
+      })
       response = await response.json()
       this.setState({authenticated: {
         username: response.user,
         id: response.id
       }})
       this.getPosts(response.id)
+    }
+    else {
+      this.setState({
+        badLogin: true
+      })
     }
     
   }
@@ -284,10 +307,14 @@ class App extends React.Component {
       body: JSON.stringify({firstName, lastName, username, password})
     })
     if (response.status === 201) {
-      console.log('success');
+      this.setState({
+        badCreate: false
+      })
     }
     else {
-      console.log('failure');
+      this.setState({
+        badCreate: true
+      })
       return
     }
     this.setState({
@@ -340,10 +367,10 @@ class App extends React.Component {
   render() {
     return (
       <div>
-        <Header create={this.displayCreateBlog} logout={this.logoutUser} getPosts={this.getPosts} setauth={this.setAuthentication} click={this.flipCreateAccount} auth={this.state.authenticated}/>
+        <Header bad={this.state.badLogin} create={this.displayCreateBlog} logout={this.logoutUser} getPosts={this.getPosts} setauth={this.setAuthentication} click={this.flipCreateAccount} auth={this.state.authenticated}/>
         {this.state.selectedBlog !== undefined && !this.state.createUser ? <BlogPost auth={this.state.authenticated} blog={this.state.testBlogs.find(blog => blog.id ===this.state.selectedBlog)} click={this.setDisplayedBlog} blogFunction={{edit: this.editBlog, delete: this.deleteBlog, create: this.createBlog}}/> : ''}
         {this.state.selectedBlog === undefined && !this.state.createUser ? <BlogDisplay blogs={this.state.testBlogs} click={this.setDisplayedBlog}/>: ''}
-        {this.state.createUser ? <CreateUser create={this.createAccount}/> : ''}
+        {this.state.createUser ? <CreateUser bad={this.state.badCreate} create={this.createAccount}/> : ''}
       </div>
     )
   }
