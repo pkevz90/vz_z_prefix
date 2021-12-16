@@ -166,11 +166,13 @@ class BlogPost extends React.Component {
       borderRadius: '10px'
     }
     contentStyle = this.props.blog === undefined  || this.state.edit ? contentStyle : {}
+    let date = this.props.blog === undefined ? '' : (new Date(this.props.blog.createdAt)).toString().split('GMT')[0]
     return (
       <div className="blog-post">
+        {this.props.blog === undefined ? <div>Title:</div> : ''}
         <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit} className="blog-title">{this.props.blog === undefined ? '' :  this.props.blog.title}</div>
-        <div>Created By: {this.props.blog === undefined ? '' : this.props.blog.bloguser.username}</div>
-        <div>{this.props.blog === undefined ? '' : this.props.blog.createdAt}</div>
+        <div>{this.props.blog === undefined ? 'Content:' : 'Created By: ' + this.props.blog.bloguser.username}</div>
+        <div>{this.props.blog === undefined ? '' : date}</div>
         <div style={contentStyle} contentEditable={this.props.blog === undefined ? true : this.state.edit}>{this.props.blog === undefined ? '' : this.props.blog.content}</div>
         <div className="blog-post-buttons">
             <button onClick={() => this.props.click(undefined)}>Back to Posts</button>
@@ -193,8 +195,8 @@ class BlogDisplay extends React.Component {
           return (
             <div className="blog-item noselect" key={blog.id} onClick={() => this.selectBlog(blog.id)}>
               <div className="blog-title">{blog.title}</div>
-              <div>{blog.createdAt}</div>
-              <div>{blog.bloguser.username}</div>
+              <div>{(new Date(blog.createdAt)).toString().split('GMT')[0]}</div>
+              <div>{'Author: ' + blog.bloguser.username}</div>
               <div>{blog.content.length > 100 ? blog.content.substring(0,101) + '...' : blog.content}</div>
             </div>
           )

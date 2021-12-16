@@ -9,6 +9,7 @@ The project utilized the following libraries
 - dotenv
 - cookie-session
 - uuid
+- morgan (logging)
 
 This repo contains both the front-end and back-end components of the application.
 

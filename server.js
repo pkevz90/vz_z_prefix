@@ -7,6 +7,7 @@ const bcrypt = require('bcrypt');
 const { Sequelize, Model, DataTypes } = require('sequelize')
 const cookieSession = require('cookie-session')
 const { v4: uuidv4 } = require('uuid')
+var morgan = require('morgan')
 
 let sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
@@ -14,9 +15,9 @@ let sequelize = new Sequelize(process.env.DATABASE_URL, {
             require: true,
             rejectUnauthorized: false
         }
-    }
+    },
+    logging: false
 })
-sequelize.drop();
 // Database Tables:
 // bloguser
 // blogposts
@@ -24,6 +25,7 @@ sequelize.drop();
 const User = sequelize.define('bloguser', {
     username: {
         type: DataTypes.STRING,
+        unique: true,
         allowNull: false
     },
     password: {
@@ -32,11 +34,12 @@ const User = sequelize.define('bloguser', {
     },
     firstName: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     lastName: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: false,
+        defaultValue: 'Anonymous'
     }
 })
 const Blog = sequelize.define('blogposts', {
@@ -56,13 +59,22 @@ const Cookies = sequelize.define('validcookies', {
     }
 })
 
+let resetDb = false;
 User.hasMany(Blog)
 User.hasMany(Cookies)
 Blog.belongsTo(User)
 Cookies.belongsTo(User)
-User.sync()
-Blog.sync()
-Cookies.sync()
+User.sync({
+    force: resetDb
+})
+Blog.sync({
+    force: resetDb
+})
+Cookies.sync({
+    force: resetDb
+})
+
+app.use(morgan(':date[web] :method :url :status - :response-time ms'))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(cookieSession({
@@ -136,12 +148,6 @@ app.post('/create', async (req,res) => {
     let hashedPassword = await bcrypt.hash(req.body.password, 12)
     let user
     try {
-        const oldUser = await User.findAll({
-            where: {
-                username: req.body.username.toLowerCase()
-            }
-        })
-        if (oldUser.length !== 0) return res.sendStatus(409)
         user = await User.create({
             username: req.body.username.toLowerCase(),
             password: hashedPassword,
@@ -150,6 +156,7 @@ app.post('/create', async (req,res) => {
         })
     }
     catch (err) {
+        console.error(err.original.detail);
         return res.sendStatus(500)
     }
     let cookieId = uuidv4()
@@ -314,23 +321,22 @@ async function authenticate(req, res, next) {
     
     // If cookie does not exist, send back unauthorized
     if (id === undefined) return res.sendStatus(401)
-    let cookie
     try {
-        cookie = await Cookies.findOne({
+        let cookie = await Cookies.findOne({
             where: {
                 cookieid: cookieId
             }
         })
+        if (!cookie) {
+            // If cookie not within authorized cookie database, send back unauthorized
+            req.session = null
+            return res.sendStatus(401)
+        }
     }
     catch(err) {
         return res.sendStatus(500)
     }
     
-    if (cookie.length === 0) {
-        // If cookie not within authorized cookie database, send back unauthorized
-        req.session = null
-        return res.sendStatus(401)
-    }
     req.id = id
     next()
 }
