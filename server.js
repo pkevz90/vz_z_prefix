@@ -3,10 +3,10 @@ const express = require('express')
 const path = require('path');
 const app = express()
 const PORT = process.env.PORT || 3001
-const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt');
 const { Sequelize, Model, DataTypes } = require('sequelize')
 const cookieSession = require('cookie-session')
+const { v4: uuidv4 } = require('uuid')
 
 let sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
@@ -17,8 +17,10 @@ let sequelize = new Sequelize(process.env.DATABASE_URL, {
     }
 })
 sequelize.drop();
+// Database Tables:
 // bloguser
 // blogposts
+// validcookies
 const User = sequelize.define('bloguser', {
     username: {
         type: DataTypes.STRING,
@@ -47,32 +49,53 @@ const Blog = sequelize.define('blogposts', {
         allowNull: false
     },
 })
+const Cookies = sequelize.define('validcookies', {
+    cookieid: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+})
 
 User.hasMany(Blog)
+User.hasMany(Cookies)
 Blog.belongsTo(User)
+Cookies.belongsTo(User)
 User.sync()
 Blog.sync()
-
+Cookies.sync()
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(cookieSession({
     name: 'session',
     keys: [process.env.COOKIE_SECRET],
-    httpOnly: true
+    httpOnly: true,
+    maxAge: 86400000
 }))
 
 app.post('/login', async (req,res) => {
-    let user = await User.findAll({
-        where: {
-            username: req.body.username.toLowerCase()
-        }
-    })
+    let user
+    try {
+        user = await User.findAll({
+            where: {
+                username: req.body.username.toLowerCase()
+            }
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
     if (user.length === 0) return res.sendStatus(401)
     user = user[0].dataValues
     let passComp = await bcrypt.compare(req.body.password, user.password)
     if (passComp) {
         // Send JWT
+        let cookieId = uuidv4()
         req.session.id = user.id
+        req.session.cookieId = cookieId
+        await Cookies.create({
+            userId: user.id,
+            cookieid: cookieId
+        })
         return res.status(200).json({user: user.username, id: user.id})
     }
     else {
@@ -82,79 +105,114 @@ app.post('/login', async (req,res) => {
 
 app.post('/blog', authenticate, async (req,res) => {
     let {content, title} = req.body
-    await Blog.create({
-        title,
-        content,
-        bloguserId: req.id
-    })
-    let blogs = await Blog.findAll({
-        where: {
+    let blogs
+    try {
+        await Blog.create({
+            title,
+            content,
             bloguserId: req.id
-        },
-        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
-        include: [
-            {
-                model: User,
-                required: true,
-                attributes: ['username']
-            }
-        ]
-    })
+        })
+        blogs = await Blog.findAll({
+            where: {
+                bloguserId: req.id
+            },
+            attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
+            include: [
+                {
+                    model: User,
+                    required: true,
+                    attributes: ['username']
+                }
+            ]
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
     res.status(201).json(blogs)
 })
 
 app.post('/create', async (req,res) => {
     let hashedPassword = await bcrypt.hash(req.body.password, 12)
-    const oldUser = await User.findAll({
-        where: {
-            username: req.body.username.toLowerCase()
-        }
-    })
-    if (oldUser.length !== 0) return res.sendStatus(409)
-    const user = await User.create({
-        username: req.body.username.toLowerCase(),
-        password: hashedPassword,
-        firstName: req.body.firstName,
-        lastName: req.body.lastName
-    })
-    console.log(user.id);
-    // req.session.id = user.id
+    let user
+    try {
+        const oldUser = await User.findAll({
+            where: {
+                username: req.body.username.toLowerCase()
+            }
+        })
+        if (oldUser.length !== 0) return res.sendStatus(409)
+        user = await User.create({
+            username: req.body.username.toLowerCase(),
+            password: hashedPassword,
+            firstName: req.body.firstName,
+            lastName: req.body.lastName
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
     res.status(201).json(user)
 })
 
 app.get('/posts', async (req,res) => {
-    let blogs = await Blog.findAll({
-        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
-        include: [
-            {
-                model: User,
-                required: true,
-                attributes: ['username']
-            }
-        ]
-    })
+    let blogs
+    try {
+        blogs = await Blog.findAll({
+            attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
+            include: [
+                {
+                    model: User,
+                    required: true,
+                    attributes: ['username']
+                }
+            ]
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
     res.status(200).json({outBlogs: blogs})
 })
 
-app.get('/logout', (req,res) => {
+app.get('/logout', async (req,res) => {
+    // Remove cookieId from valid cookies database
+    // Prevents cookie from being used without user permission
+    try {
+        await Cookies.destroy({
+            where: {
+                cookieid: req.session.cookieId
+            }
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
     req.session = null
     res.sendStatus(200)
 })
 
 app.get('/posts/:userid' ,async (req,res) => {
-    let blogs = await Blog.findAll({
-        where: {
-            bloguserId: req.params.userid
-        },
-        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
-        include: [
-            {
-                model: User,
-                required: true,
-                attributes: ['username']
-            }
-        ]
-    })
+    let blogs
+    try {
+        blogs = await Blog.findAll({
+            where: {
+                bloguserId: req.params.userid
+            },
+            attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
+            include: [
+                {
+                    model: User,
+                    required: true,
+                    attributes: ['username']
+                }
+            ]
+        })
+    }
+    catch (err) {
+        return res.sendStatus(500)
+    }
+    
     res.status(200).json({outBlogs: blogs})
 })
 // /
@@ -170,53 +228,66 @@ app.get('/login/auth', authenticate, async (req,res) => {
 })
 
 app.put('/post/:postid', authenticate, async (req,res) => {
-    let blog = await Blog.findOne({
-        where: {
-            id: Number(req.params.postid)
-        },
-        attributes: ['bloguserId']
-    })
-    if (req.id !== blog.bloguserId) return res.sendStatus(403)
-    await Blog.update({
-        content: req.body.content,
-        title: req.body.title
-    },{
-        where: {
-            id: Number(req.params.postid)
-        }
-    })
-    let blogs = await Blog.findAll({
-        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
-        include: [
-            {
-                model: User,
-                required: true,
-                attributes: ['username']
+    let blogs
+    try {
+        let blog = await Blog.findOne({
+            where: {
+                id: Number(req.params.postid)
+            },
+            attributes: ['bloguserId']
+        })
+        if (req.id !== blog.bloguserId) return res.sendStatus(403)
+        await Blog.update({
+            content: req.body.content,
+            title: req.body.title
+        },{
+            where: {
+                id: Number(req.params.postid)
             }
-        ]
-    })
+        })
+        blogs = await Blog.findAll({
+            attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
+            include: [
+                {
+                    model: User,
+                    required: true,
+                    attributes: ['username']
+                }
+            ]
+        })
+    }
+    catch(err) {
+        return res.sendStatus(500)
+    }
     res.status(200).json(blogs)
 })
 
 app.delete('/post/:id', authenticate, async (req,res) => {
-    await Blog.destroy({
-        where: {
-            id: Number(req.params.id)
-        }
-    })
-    let blogs = await Blog.findAll({
-        where: {
-            bloguserId: req.id
-        },
-        attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
-        include: [
-            {
-                model: User,
-                required: true,
-                attributes: ['username']
+    let blogs
+    try {
+        await Blog.destroy({
+            where: {
+                id: Number(req.params.id)
             }
-        ]
-    })
+        })
+        blogs = await Blog.findAll({
+            where: {
+                bloguserId: req.id
+            },
+            attributes: ['id', 'createdAt', 'title', 'content', 'bloguserId'],
+            include: [
+                {
+                    model: User,
+                    required: true,
+                    attributes: ['username']
+                }
+            ]
+        })
+    }
+    catch(err) {
+        return res.sendStatus(500)
+    }
+    
     res.status(200).json(blogs)
 })
 
@@ -224,27 +295,31 @@ app.delete('/post/:id', authenticate, async (req,res) => {
 
 // Middleware to check auth token
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
     let id = req.session.id
+    let cookieId = req.session.cookieId
+    
+    // If cookie does not exist, send back unauthorized
     if (id === undefined) return res.sendStatus(401)
+    let cookie
+    try {
+        cookie = await Cookies.findOne({
+            where: {
+                cookieid: cookieId
+            }
+        })
+    }
+    catch(err) {
+        return res.sendStatus(500)
+    }
+    
+    if (cookie.length === 0) {
+        // If cookie not within authorized cookie database, send back unauthorized
+        req.session = null
+        return res.sendStatus(401)
+    }
     req.id = id
     next()
 }
-// function checkJWT(req, res, next) {
-//     const token = req.session.jwt
-//     // If no JWT present, return forbidden
-//     if (token == null) return res.sendStatus(401)
-//     // limit algorithm to HS256 to prevent tampering and sending JWT with 'none' setting as algorithm
-//     jwt.verify(token,process.env.ACCESS_SECRET, {algorithms: ['HS256']}, (err, user) => {
-//         if (err) {
-//             // Destroy cookie if JWT is not valid
-//             req.session = null
-//             return res.sendStatus(403)
-//         }
-//         // JWT valid, add validated user to request
-//         req.user = user.username.toLowerCase()
-//         next()
-//     })
-// }
 
 app.listen(PORT, () => console.log('Server started on port ' + PORT ))

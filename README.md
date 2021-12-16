@@ -4,11 +4,11 @@ The project utilized the following libraries
 - ReactJS
 - Express
 - Bcrypt
-- jsonwebtoken
 - pg
 - sequelize
 - dotenv
 - cookie-session
+- uuid
 
 This repo contains both the front-end and back-end components of the application.
 
@@ -18,11 +18,11 @@ The web application is hosted utilizing the cloud platform Heroku, which provide
 
 ## Security
 
-The project utilizes web tokens for user authentication and authorization. The web tokens issued are signed with a private key generate utilizing nodejs's native crypto library. 
+The project utilizes signed cookies provided by the cookie-session npm dependency. The signed cookie is set to HttpOnly for security and contains the authorized user's ID, username, and a unique cookie identifier provided by the uuid library. The maximum age for a cookie is 24 hrs, after which the user will have to re-authenticate. 
 
-With the private key, the web tokens are signed utilizing the SH256 algorithm and simply include the authenticated username as data. This prevents unauthorized tampering of the authorization given. The JWT is stored in an HTTPonly cookie, preventing tampering. 
+The unique cookie identifier is inserted into a valid cookies table. This allows the cookie to be invalidated for all users when a user logs out of the website utilizing a specific cookie. This further lowers the chance of mistaken authentication through stolen data. 
 
-The JWT expires 30 minutes after issuance for security purposes. On the client side, a JWT is checked for, then sent to the server on startup for verification. If expired or unable to be authenticated, the UI requests the user provide login credentials. The JWT is required to be attached to all requests to edit, delete, or create posts. Additionally, the JWT is utilized to ensure only posts created by the user can be edited or deleted by the user. 
+Authentication via the signed cookie is utilized for every user action that alters the database, including adding posts, editing posts, and deleting posts. 
 
 The cloud service handles SSL certs providing for a secure requests to the API endpoint.
 
