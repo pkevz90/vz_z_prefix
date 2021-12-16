@@ -270,8 +270,8 @@ class App extends React.Component {
   async checkAuthentication() {
     let response = await fetch('/login/auth')
     let status = response.status
-    response = await response.json()
     if (status === 200) {
+      response = await response.json()
       this.setState({
         authenticated: {
           username: response.user,
