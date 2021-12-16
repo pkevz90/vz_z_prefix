@@ -152,7 +152,20 @@ app.post('/create', async (req,res) => {
     catch (err) {
         return res.sendStatus(500)
     }
-    res.status(201).json(user)
+    let cookieId = uuidv4()
+    try {
+        await Cookies.create({
+            userId: user.id,
+            cookieid: cookieId
+        })
+        
+        req.session.id = user.id
+        req.session.cookieId = cookieId
+    }
+    catch (err) {
+        // Will not send error and user will have to login on refresh    
+    }
+    res.status(201).json({user: user.username, id: user.id})
 })
 
 app.get('/posts', async (req,res) => {
@@ -259,7 +272,7 @@ app.put('/post/:postid', authenticate, async (req,res) => {
     catch(err) {
         return res.sendStatus(500)
     }
-    res.status(200).json(blogs)
+    res.status(201).json(blogs)
 })
 
 app.delete('/post/:id', authenticate, async (req,res) => {
@@ -288,7 +301,7 @@ app.delete('/post/:id', authenticate, async (req,res) => {
         return res.sendStatus(500)
     }
     
-    res.status(200).json(blogs)
+    res.status(201).json(blogs)
 })
 
 

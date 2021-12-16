@@ -306,10 +306,17 @@ class App extends React.Component {
       },
       body: JSON.stringify({firstName, lastName, username, password})
     })
-    if (response.status === 201) {
+    let status = response.status
+    response = await response.json()
+    if (status === 201) {
       this.setState({
-        badCreate: false
+        badCreate: false,
+        authenticated: {
+          username: response.user,
+          id: response.id
+        }
       })
+
     }
     else {
       this.setState({
@@ -329,6 +336,12 @@ class App extends React.Component {
        },
       body: JSON.stringify(newBlog)
     })
+    if (response.status !== 201) {
+      this.setState({
+        authenticated: false
+      })
+      return
+    }
     response = await response.json()
     this.setState({
       testBlogs: response,
@@ -343,6 +356,12 @@ class App extends React.Component {
       },
       body: JSON.stringify(newBlog)
     })
+    if (response.status !== 201) {
+      this.setState({
+        authenticated: false
+      })
+      return
+    }
     response = await response.json()
     this.setState({
       testBlogs: response
@@ -352,6 +371,12 @@ class App extends React.Component {
     let response = await fetch('/post/' + id, {
       method: 'DELETE'
     })
+    if (response.status !== 201) {
+      this.setState({
+        authenticated: false
+      })
+      return
+    }
     response = await response.json()
     this.setState({
       testBlogs: response,
