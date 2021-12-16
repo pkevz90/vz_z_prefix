@@ -306,9 +306,8 @@ class App extends React.Component {
       },
       body: JSON.stringify({firstName, lastName, username, password})
     })
-    let status = response.status
-    response = await response.json()
-    if (status === 201) {
+    if (response.status === 201) {
+      response = await response.json()
       this.setState({
         badCreate: false,
         authenticated: {
