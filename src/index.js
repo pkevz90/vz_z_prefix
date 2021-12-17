@@ -109,9 +109,9 @@ class Header extends React.Component {
     return (
       <>
         <div className="header">
-          <div className="brand-name">
-            Tiger Blog
-          </div>
+          <a href='/' className="brand-name">
+           VZ Blog
+          </a>
           {this.props.auth ? <UserDisplay create={this.props.create} getPosts={this.props.getPosts} logout={this.props.logout} user={this.props.auth}></UserDisplay> : <Login bad={this.props.bad} auth={this.props.setauth} click={this.props.click}/>}
         </div>
       </>
