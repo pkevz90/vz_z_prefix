@@ -74,6 +74,8 @@ Cookies.sync({
     force: resetDb
 })
 
+// User.findAll().then((res, err) => console.log(res))
+
 app.use(morgan(':date[web] :method :url :status - :response-time ms'))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));

@@ -201,6 +201,7 @@ class BlogDisplay extends React.Component {
             </div>
           )
         })}
+        {this.props.blogs.length === 0 ? <div>No User Blogs Present, Click Create Post to Start!</div> : ''}
       </div>
     )
   }
