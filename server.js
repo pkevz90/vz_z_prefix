@@ -186,6 +186,9 @@ app.get('/posts', async (req,res) => {
                     required: true,
                     attributes: ['username']
                 }
+            ],
+            order: [
+                ['createdAt', 'DESC']
             ]
         })
     }
@@ -226,6 +229,9 @@ app.get('/posts/:userid' ,async (req,res) => {
                     required: true,
                     attributes: ['username']
                 }
+            ],
+            order: [
+                ['createdAt', 'DESC']
             ]
         })
     }
@@ -273,6 +279,9 @@ app.put('/post/:postid', authenticate, async (req,res) => {
                     required: true,
                     attributes: ['username']
                 }
+            ],
+            order: [
+                ['createdAt', 'DESC']
             ]
         })
     }
@@ -301,6 +310,9 @@ app.delete('/post/:id', authenticate, async (req,res) => {
                     required: true,
                     attributes: ['username']
                 }
+            ],
+            order: [
+                ['createdAt', 'DESC']
             ]
         })
     }
