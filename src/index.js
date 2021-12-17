@@ -316,7 +316,8 @@ class App extends React.Component {
         authenticated: {
           username: response.user,
           id: response.id
-        }
+        },
+        testBlogs: []
       })
 
     }
