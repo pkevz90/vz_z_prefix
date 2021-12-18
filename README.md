@@ -10,6 +10,7 @@ The project utilized the following libraries
 - cookie-session
 - uuid
 - morgan (logging)
+- helmet
 
 This repo contains both the front-end and back-end components of the application.
 
@@ -24,6 +25,8 @@ The project utilizes signed cookies provided by the cookie-session npm dependenc
 The unique cookie identifier is inserted into a valid cookies table. This allows the cookie to be invalidated for all users when a user logs out of the website utilizing a specific cookie. This further lowers the chance of mistaken authentication through stolen data. 
 
 Authentication via the signed cookie is utilized for every user action that alters the database, including adding posts, editing posts, and deleting posts. 
+
+The npm library helmet is used to set http headers to various more secure options.
 
 The cloud service handles SSL certs providing for a secure requests to the API endpoint.
 
