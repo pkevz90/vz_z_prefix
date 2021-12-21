@@ -8,7 +8,6 @@ const { Sequelize, Model, DataTypes } = require('sequelize')
 const cookieSession = require('cookie-session')
 const { v4: uuidv4 } = require('uuid')
 var morgan = require('morgan')
-const helmet = require("helmet");
 
 let sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialectOptions: {
@@ -78,7 +77,6 @@ Cookies.sync({
 // User.findAll().then((res, err) => console.log(res))
 
 app.use(morgan(':date[web] :method :url :status - :response-time ms'))
-app.use(helmet());
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'build')));
 app.use(cookieSession({
